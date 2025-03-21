@@ -1,55 +1,14 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const { ethers } = require('ethers');
-
 const app = express();
-const port = 8080;
+const path = require('path');
 
-// Подключение к локальной сети Ethereum
-const provider = new ethers.JsonRpcProvider('http://127.0.0.1:7545');
-
-// ABI и адрес контракта
-const contractABI = JSON.parse(fs.readFileSync('FileRegistryABI.json', 'utf8'));
-const contractAddress = '0xYourContractAddressHere';
-const contract = new ethers.Contract(contractAddress, contractABI, provider);
-
-// Middleware для обработки JSON
-app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Регистрация файла
-app.post('/register', async (req, res) => {
-    const { fileHash, fileName, owner } = req.body;
-
-    try {
-        // Получение первого аккаунта из Ganache
-        const signer = provider.getSigner(0);
-        const contractWithSigner = contract.connect(signer);
-
-        // Вызов метода контракта
-        const tx = await contractWithSigner.registerFile(fileHash, fileName, owner);
-        await tx.wait(); // Ожидание подтверждения транзакции
-
-        res.send('File registered successfully!');
-    } catch (error) {
-        res.status(500).send(error.toString());
-    }
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Получение информации о файле
-app.get('/file/:fileHash', async (req, res) => {
-    const fileHash = req.params.fileHash;
-
-    try {
-        const fileInfo = await contract.getFileInfo(fileHash);
-        res.json({ fileName: fileInfo[0], owner: fileInfo[1] });
-    } catch (error) {
-        res.status(500).send(error.toString());
-    }
-});
-
-// Запуск сервера
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}/`);
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+    console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
